@@ -1,8 +1,8 @@
-#include "f2c.h"
-
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+
+#include "f2c.h"
 
 static INIT_ONCE timer_once = INIT_ONCE_STATIC_INIT;
 static LARGE_INTEGER timer_frequency;

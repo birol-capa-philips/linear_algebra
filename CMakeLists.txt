@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 
-project(CLAPACK VERSION 3.2.1 LANGUAGES C)
+project(CLAPACKAdapter VERSION 3.2.1 LANGUAGES C)
 
 include(CTest)
 
@@ -39,6 +39,33 @@ set(BLAS_SOURCE_DIR "${CLAPACK_ROOT}/BLAS/SRC")
 set(LAPACK_SOURCE_DIR "${CLAPACK_ROOT}/SRC")
 set(TMG_SOURCE_DIR "${CLAPACK_ROOT}/TESTING/MATGEN")
 
+set(F2C_GENERATED_INCLUDE_DIR "${CMAKE_BINARY_DIR}/generated/f2c")
+file(MAKE_DIRECTORY "${F2C_GENERATED_INCLUDE_DIR}")
+
+foreach(f2c_header signal1.h sysdep1.h)
+    if(EXISTS "${F2C_SOURCE_DIR}/${f2c_header}")
+        set(f2c_header_source "${F2C_SOURCE_DIR}/${f2c_header}")
+    elseif(EXISTS "${F2C_SOURCE_DIR}/${f2c_header}0")
+        set(f2c_header_source "${F2C_SOURCE_DIR}/${f2c_header}0")
+    else()
+        message(FATAL_ERROR
+            "Neither ${f2c_header} nor ${f2c_header}0 exists in ${F2C_SOURCE_DIR}")
+    endif()
+    configure_file("${f2c_header_source}"
+        "${F2C_GENERATED_INCLUDE_DIR}/${f2c_header}" COPYONLY)
+endforeach()
+
+if(EXISTS "${F2C_SOURCE_DIR}/arith.h")
+    set(F2C_ARITH_HEADER "${F2C_SOURCE_DIR}/arith.h")
+elseif(MSVC AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(F2C_ARITH_HEADER "${CLAPACK_ADAPTER_ROOT}/cmake/arith-msvc-x86.h")
+else()
+    message(FATAL_ERROR
+        "The selected CLAPACK tree has no generated F2CLIBS/libf2c/arith.h, and this adapter only supplies a Win32 MSVC replacement.")
+endif()
+configure_file("${F2C_ARITH_HEADER}"
+    "${F2C_GENERATED_INCLUDE_DIR}/arith.h" COPYONLY)
+
 clapack_read_make_objects(F2C_SOURCES
     "${F2C_SOURCE_DIR}/Makefile" "${F2C_SOURCE_DIR}"
     MISC POW CX DCX REAL DBL INT HALF CMP EFL CHAR I77)
@@ -72,6 +99,7 @@ function(clapack_configure_library target_name)
             "$<INSTALL_INTERFACE:include>"
         PRIVATE
             "${F2C_SOURCE_DIR}"
+            "${F2C_GENERATED_INCLUDE_DIR}"
     )
 
     set_target_properties(${target_name} PROPERTIES
@@ -114,6 +142,7 @@ if(BUILD_TESTING)
         target_include_directories(${target_name} PRIVATE
             "${CLAPACK_ROOT}/INCLUDE"
             "${F2C_SOURCE_DIR}"
+            "${F2C_GENERATED_INCLUDE_DIR}"
         )
         target_link_libraries(${target_name} PRIVATE tmg lapack blas f2c)
         if(MSVC)
@@ -140,6 +169,7 @@ if(BUILD_TESTING)
         target_include_directories(${test_target} PRIVATE
             "${CLAPACK_ROOT}/INCLUDE"
             "${F2C_SOURCE_DIR}"
+            "${F2C_GENERATED_INCLUDE_DIR}"
         )
         target_link_libraries(${test_target} PRIVATE f2c)
         add_test(NAME "install.${test_name}" COMMAND ${test_target})

@@ -7,7 +7,8 @@ imported source directories.
 
 The adapter reads source lists from each distribution's original GNU
 makefiles. The `RelWithDebInfo` build configuration enables optimization and
-compiler debug information.
+compiler debug information. Generated libf2c configuration headers are placed
+in the build directory, leaving the selected source tree unchanged.
 
 ## Prerequisites
 
