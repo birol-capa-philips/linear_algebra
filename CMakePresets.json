@@ -1,0 +1,74 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "vs2022-win32-base",
+      "hidden": true,
+      "generator": "Visual Studio 17 2022",
+      "architecture": "Win32"
+    },
+    {
+      "name": "archive-vs2022-win32",
+      "displayName": "Archive CLAPACK - Visual Studio 2022 Win32",
+      "inherits": "vs2022-win32-base",
+      "binaryDir": "${sourceDir}/build/archive-vs2022-win32",
+      "cacheVariables": {
+        "CLAPACK_SOURCE_DIR": "${sourceDir}/reference_from_archive/CLAPACK_3_2_1"
+      }
+    },
+    {
+      "name": "netlib-vs2022-win32",
+      "displayName": "Netlib CLAPACK - Visual Studio 2022 Win32",
+      "inherits": "vs2022-win32-base",
+      "binaryDir": "${sourceDir}/build/netlib-vs2022-win32",
+      "cacheVariables": {
+        "CLAPACK_SOURCE_DIR": "${sourceDir}/reference_from_netlib/CLAPACK-3.2.1"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "archive-vs2022-win32-relwithdebinfo",
+      "displayName": "Archive CLAPACK - RelWithDebInfo",
+      "configurePreset": "archive-vs2022-win32",
+      "configuration": "RelWithDebInfo"
+    },
+    {
+      "name": "netlib-vs2022-win32-relwithdebinfo",
+      "displayName": "Netlib CLAPACK - RelWithDebInfo",
+      "configurePreset": "netlib-vs2022-win32",
+      "configuration": "RelWithDebInfo"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "archive-vs2022-win32",
+      "displayName": "Test archive CLAPACK",
+      "configurePreset": "archive-vs2022-win32",
+      "configuration": "RelWithDebInfo",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 4
+      }
+    },
+    {
+      "name": "netlib-vs2022-win32",
+      "displayName": "Test netlib CLAPACK",
+      "configurePreset": "netlib-vs2022-win32",
+      "configuration": "RelWithDebInfo",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "jobs": 4
+      }
+    }
+  ]
+}

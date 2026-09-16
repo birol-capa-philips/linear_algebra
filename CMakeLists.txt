@@ -4,7 +4,28 @@ project(CLAPACK VERSION 3.2.1 LANGUAGES C)
 
 include(CTest)
 
+set(CLAPACK_SOURCE_DIR "" CACHE PATH "Path to a CLAPACK 3.2.1 source tree")
 option(CLAPACK_REQUIRE_32_BIT "Reject non-32-bit build configurations" ON)
+
+if(NOT CLAPACK_SOURCE_DIR)
+    message(FATAL_ERROR
+        "CLAPACK_SOURCE_DIR is required. Use an included configure preset or pass -DCLAPACK_SOURCE_DIR=<path>.")
+endif()
+
+get_filename_component(CLAPACK_ROOT "${CLAPACK_SOURCE_DIR}"
+    ABSOLUTE BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+set(CLAPACK_ADAPTER_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
+
+foreach(required_path
+        F2CLIBS/libf2c/Makefile
+        BLAS/SRC/Makefile
+        SRC/Makefile
+        TESTING/MATGEN/Makefile)
+    if(NOT EXISTS "${CLAPACK_ROOT}/${required_path}")
+        message(FATAL_ERROR
+            "CLAPACK_SOURCE_DIR is not a supported CLAPACK tree; missing ${required_path}: ${CLAPACK_ROOT}")
+    endif()
+endforeach()
 
 if(CLAPACK_REQUIRE_32_BIT AND NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
     message(FATAL_ERROR
@@ -13,7 +34,6 @@ endif()
 
 include(cmake/MakefileSources.cmake)
 
-set(CLAPACK_ROOT "${CMAKE_CURRENT_SOURCE_DIR}")
 set(F2C_SOURCE_DIR "${CLAPACK_ROOT}/F2CLIBS/libf2c")
 set(BLAS_SOURCE_DIR "${CLAPACK_ROOT}/BLAS/SRC")
 set(LAPACK_SOURCE_DIR "${CLAPACK_ROOT}/SRC")
@@ -37,7 +57,8 @@ if(WIN32)
         "${CLAPACK_ROOT}/INSTALL/second.c"
         "${CLAPACK_ROOT}/INSTALL/dsecnd.c"
     )
-    list(APPEND LAPACK_SOURCES "${CLAPACK_ROOT}/cmake/windows_timers.c")
+    list(APPEND LAPACK_SOURCES
+        "${CLAPACK_ADAPTER_ROOT}/cmake/windows_timers.c")
 endif()
 
 clapack_read_make_objects(TMG_SOURCES
@@ -109,7 +130,7 @@ if(BUILD_TESTING)
                 "-DTEST_OUTPUT=${CLAPACK_TEST_RESULTS_DIR}/${output_name}.out"
                 "-DREQUIRED_REGEX=tests run|examples tested"
                 "-DFORBIDDEN_REGEX=out of [0-9]+ tests failed|[1-9][0-9]* error messages recorded|Execution not attempted|routines were not tested|\\*\\*\\* Error|example number where [A-Za-z() /]*info is not (0|zero)[ ]*=[ ]*[1-9]|example number where ILO or IHI wrong[ ]*=[ ]*[1-9]"
-                -P "${CLAPACK_ROOT}/cmake/RunWithInput.cmake")
+                -P "${CLAPACK_ADAPTER_ROOT}/cmake/RunWithInput.cmake")
         set_tests_properties("${test_name}" PROPERTIES LABELS "lapack")
     endfunction()
 
@@ -129,25 +150,34 @@ if(BUILD_TESTING)
     endfunction()
 
     clapack_add_install_test(lsame
-        INSTALL/lsame.c INSTALL/lsametst.c)
+        "${CLAPACK_ROOT}/INSTALL/lsame.c"
+        "${CLAPACK_ROOT}/INSTALL/lsametst.c")
     clapack_add_install_test(slamch
-        INSTALL/slamch.c INSTALL/lsame.c INSTALL/slamchtst.c)
+        "${CLAPACK_ROOT}/INSTALL/slamch.c"
+        "${CLAPACK_ROOT}/INSTALL/lsame.c"
+        "${CLAPACK_ROOT}/INSTALL/slamchtst.c")
     clapack_add_install_test(dlamch
-        INSTALL/dlamch.c INSTALL/lsame.c INSTALL/dlamchtst.c)
+        "${CLAPACK_ROOT}/INSTALL/dlamch.c"
+        "${CLAPACK_ROOT}/INSTALL/lsame.c"
+        "${CLAPACK_ROOT}/INSTALL/dlamchtst.c")
     clapack_add_install_test(second
-        cmake/windows_timers.c INSTALL/secondtst.c)
+        "${CLAPACK_ADAPTER_ROOT}/cmake/windows_timers.c"
+        "${CLAPACK_ROOT}/INSTALL/secondtst.c")
     clapack_add_install_test(dsecnd
-        cmake/windows_timers.c INSTALL/dsecndtst.c)
-    clapack_add_install_test(ieee INSTALL/tstiee.c)
+        "${CLAPACK_ADAPTER_ROOT}/cmake/windows_timers.c"
+        "${CLAPACK_ROOT}/INSTALL/dsecndtst.c")
+    clapack_add_install_test(ieee
+        "${CLAPACK_ROOT}/INSTALL/tstiee.c")
     clapack_add_install_test(version
-        INSTALL/ilaver.c INSTALL/LAPACK_version.c)
+        "${CLAPACK_ROOT}/INSTALL/ilaver.c"
+        "${CLAPACK_ROOT}/INSTALL/LAPACK_version.c")
 
     set(BLAS_TEST_PRECISIONS s d c z)
     foreach(blas_level 1 2 3)
         foreach(blas_precision IN LISTS BLAS_TEST_PRECISIONS)
             set(blas_test_target "xblat${blas_level}${blas_precision}")
             add_executable(${blas_test_target}
-                "BLAS/TESTING/${blas_precision}blat${blas_level}.c")
+                "${CLAPACK_ROOT}/BLAS/TESTING/${blas_precision}blat${blas_level}.c")
             clapack_configure_test_target(${blas_test_target})
 
             if(blas_level EQUAL 1)
@@ -165,7 +195,7 @@ if(BUILD_TESTING)
                         "-DTEST_REPORT=${blas_precision}blat${blas_level}.out"
                         "-DTEST_OUTPUT=${CLAPACK_TEST_RESULTS_DIR}/blas.level${blas_level}.${blas_precision}.out"
                         "-DREQUIRED_REGEX=PASS"
-                        -P "${CLAPACK_ROOT}/cmake/RunWithInput.cmake")
+                        -P "${CLAPACK_ADAPTER_ROOT}/cmake/RunWithInput.cmake")
             endif()
             set_tests_properties("blas.level${blas_level}.${blas_precision}"
                 PROPERTIES LABELS "blas")
@@ -215,14 +245,16 @@ if(BUILD_TESTING)
         string(TOUPPER "${lin_precision}" lin_precision_upper)
         add_executable(xlintst${lin_precision}
             ${LIN_COMMON_SOURCES} ${LIN_SC_SOURCES}
-            ${LIN_${lin_precision_upper}_SOURCES} cmake/windows_timers.c)
+            ${LIN_${lin_precision_upper}_SOURCES}
+            "${CLAPACK_ADAPTER_ROOT}/cmake/windows_timers.c")
         clapack_configure_test_target(xlintst${lin_precision})
     endforeach()
     foreach(lin_precision d z)
         string(TOUPPER "${lin_precision}" lin_precision_upper)
         add_executable(xlintst${lin_precision}
             ${LIN_COMMON_SOURCES} ${LIN_DZ_SOURCES}
-            ${LIN_${lin_precision_upper}_SOURCES} cmake/windows_timers.c)
+            ${LIN_${lin_precision_upper}_SOURCES}
+            "${CLAPACK_ADAPTER_ROOT}/cmake/windows_timers.c")
         clapack_configure_test_target(xlintst${lin_precision})
     endforeach()
 
@@ -241,7 +273,8 @@ if(BUILD_TESTING)
             "${LIN_TEST_SOURCE_DIR}/Makefile" "${LIN_TEST_SOURCE_DIR}"
             ${lin_source_group})
         add_executable(${lin_target}
-            ${LIN_EXTRA_SOURCES} cmake/windows_timers.c)
+            ${LIN_EXTRA_SOURCES}
+            "${CLAPACK_ADAPTER_ROOT}/cmake/windows_timers.c")
         clapack_configure_test_target(${lin_target})
     endforeach()
 
@@ -264,14 +297,16 @@ if(BUILD_TESTING)
         string(TOUPPER "${eig_precision}" eig_precision_upper)
         add_executable(xeigtst${eig_precision}
             ${EIG_COMMON_SOURCES} ${EIG_SC_SOURCES}
-            ${EIG_${eig_precision_upper}_SOURCES} cmake/windows_timers.c)
+            ${EIG_${eig_precision_upper}_SOURCES}
+            "${CLAPACK_ADAPTER_ROOT}/cmake/windows_timers.c")
         clapack_configure_test_target(xeigtst${eig_precision})
     endforeach()
     foreach(eig_precision d z)
         string(TOUPPER "${eig_precision}" eig_precision_upper)
         add_executable(xeigtst${eig_precision}
             ${EIG_COMMON_SOURCES} ${EIG_DZ_SOURCES}
-            ${EIG_${eig_precision_upper}_SOURCES} cmake/windows_timers.c)
+            ${EIG_${eig_precision_upper}_SOURCES}
+            "${CLAPACK_ADAPTER_ROOT}/cmake/windows_timers.c")
         clapack_configure_test_target(xeigtst${eig_precision})
     endforeach()
 
