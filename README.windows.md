@@ -65,6 +65,29 @@ ctest --preset netlib-vs2022-win32
 
 Outputs are written under `build/netlib-vs2022-win32/`.
 
+## Clean build
+
+To delete compiled outputs while preserving the configured CMake cache, use
+`--clean-first`:
+
+```powershell
+cmake --build --preset netlib-vs2022-win32-relwithdebinfo --clean-first --parallel
+```
+
+For a completely fresh build, remove its build directory before configuring,
+building, and testing again:
+
+```powershell
+Remove-Item -Recurse -Force build/netlib-vs2022-win32
+cmake --preset netlib-vs2022-win32
+cmake --build --preset netlib-vs2022-win32-relwithdebinfo --parallel
+ctest --preset netlib-vs2022-win32
+```
+
+Replace `netlib` with `archive` in the preset and build-directory names to
+clean the archived source build instead. Prefer a completely fresh build after
+changing the generator, platform, toolchain, or `CLAPACK_SOURCE_DIR`.
+
 Each build produces these static libraries under its
 `lib/RelWithDebInfo/` directory:
 
