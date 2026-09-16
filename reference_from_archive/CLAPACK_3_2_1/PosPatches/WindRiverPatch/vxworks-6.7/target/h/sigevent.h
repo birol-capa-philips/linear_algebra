@@ -1,0 +1,43 @@
+/* sigevent.h - sigevent structure, needed by several header files */
+
+/* Copyright 1984-1992 Wind River Systems, Inc. */
+
+/*
+modification history
+--------------------
+02e,02dec03,ans  Added taskId parameter to sigeventInit ().
+02d,14oct03,ans  Added sigevenLib support.
+02c,09nov93,rrr  update to posix 1003.4 draft 14
+02b,22sep92,rrr  added support for c++
+02a,04jul92,jcf  cleaned up.
+01b,26may92,rrr  the tree shuffle
+01a,19feb92,rrr  written from posix spec
+*/
+
+#ifndef __INCsigeventh
+#define __INCsigeventh
+
+#if defined _WRS_KERNEL && defined _CLAPACK_BUILD
+#include <types/vxWind.h>
+typedef int STATUS;
+#endif
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "sigeventCommon.h"
+
+typedef struct sigevent_t * SIGEVENT_ID;
+
+extern SIGEVENT_ID sigeventCreate (struct sigevent * pSigev);
+extern STATUS     sigeventInit (SIGEVENT_ID sigevId, int taskId,
+                                struct sigevent * pSigev);
+extern STATUS     sigeventNotify (SIGEVENT_ID sigevId);
+extern STATUS     sigeventDelete (SIGEVENT_ID sigevId);
+extern int        sigeventSigOverrunGet (SIGEVENT_ID  sigevId);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __INCsigeventh */
